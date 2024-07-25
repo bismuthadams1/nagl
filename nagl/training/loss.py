@@ -247,6 +247,83 @@ class DipoleTarget(_BaseTarget):
         return report_path
 
 
+
+class ESPTarget(_BaseTarget):
+    """Calculate the molecular ESP loss based on some predicted charges stored in the charge_label.
+
+    Calculate the supplied metric between the ESP vectors.
+    """
+
+    def __init__(
+        self,
+        metric: MetricType,
+        denominator: float,
+        weight: float,
+        esp_column: str,
+        conformation_column: str,
+        distance_column: str,
+        charge_label: str,
+        ke = float,
+    ):
+        """Initialize the ESPTarget class
+        metric: MetricType
+
+        denominator: float
+
+        weight: float
+
+        esp_column: str
+
+
+    
+        """
+        super().__init__(metric, denominator, weight)
+        self.esp_column = esp_column
+        self.conformation_column = conformation_column
+        self.charge_label = charge_label
+        self.distance_column = distance_column
+        self.ke = ke
+    
+    def evaluate_loss(
+        self,
+        molecules: typing.Union[DGLMolecule, DGLMoleculeBatch],
+        labels: typing.Dict[str, torch.Tensor],
+        prediction: typing.Dict[str, torch.Tensor],
+    ) -> torch.Tensor:
+        metric_func = get_metric(self.metric)
+        # esp list already flat
+        targed_esp = labels[self.esp_column]
+        n_atoms_per_molecule = (
+            (molecules.n_atoms,)
+            if isinstance(molecules, DGLMolecule)
+            else molecules.n_atoms_per_molecule
+        )
+        # reshape the array incase it is flat
+        conformation = torch.reshape(labels[self.conformation_column], (-1, 3))
+        distance = labels[self.distance_column]
+
+        # split the total array by the number of atoms per molecule
+        charges = torch.split(
+            prediction[self.charge_label].squeeze(), n_atoms_per_molecule
+        )
+
+        inv_distances = torch.split(distance, n_atoms_per_molecule)
+
+        predicted_esp = torch.stack(
+            [
+                self.ke * (inv_distance @ charge_slice)
+                for charge_slice, inv_distance in zip(charges, inv_distances)
+            ]
+        )
+
+        # get the error across all dipoles
+        return (
+            metric_func(predicted_esp, targed_esp)
+            * self.weight
+            / self.denominator
+        )
+
+
 LossCalculator = typing.Union[typing.Literal["ReadoutTarget", "DipoleTarget"], str]
 
 
