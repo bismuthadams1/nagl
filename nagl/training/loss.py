@@ -260,26 +260,28 @@ class ESPTarget(_BaseTarget):
         denominator: float,
         weight: float,
         esp_column: str,
-        conformation_column: str,
         distance_column: str,
         charge_label: str,
-        ke = float,
+        ke : float,
     ):
         """Initialize the ESPTarget class
         metric: MetricType
-
+            the type of metric, rmse, mse, or mae used to evaluate the loss
         denominator: float
-
+            scales the final loss value
         weight: float
-
+            weights associated with the edges
         esp_column: str
-
-
-    
+            column key for the esp data in the labels dictionary
+        distance_column: str
+            distance between the conformer points and grid points
+        charge_label: str
+            key for charges in the labels dictionary
+        ke: float
+            Coulombs constant
         """
         super().__init__(metric, denominator, weight)
         self.esp_column = esp_column
-        self.conformation_column = conformation_column
         self.charge_label = charge_label
         self.distance_column = distance_column
         self.ke = ke
@@ -299,7 +301,6 @@ class ESPTarget(_BaseTarget):
             else molecules.n_atoms_per_molecule
         )
         # reshape the array incase it is flat
-        conformation = torch.reshape(labels[self.conformation_column], (-1, 3))
         distance = labels[self.distance_column]
 
         # split the total array by the number of atoms per molecule
