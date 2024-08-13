@@ -54,6 +54,21 @@ class DipoleTarget(_BaseTarget):
         description="The name of the readout model that predicts the atomic charge to calculate the dipole.",
     )
 
+class ESPTarget(_BaseTarget):
+    """Defines a ESP specific target to train / evaluate against"""
+    
+    esp_column: str = pydantic.Field(
+        ...,
+        description="The column in the source field that contains the dipole data in Eh/e"
+    ) 
+    inv_distance_column: str  = pydantic.Field(
+        ...,
+        description="The column in the source field that contains the dipole data in a0"
+    )
+    charge_label: str = pydantic.Field(
+        ...,
+        description="The name of the readout model that predicts the atomic charge to calculate the dipole.",
+    )
 
 @pydantic.dataclasses.dataclass(config={"extra": pydantic.Extra.forbid})
 class Dataset:

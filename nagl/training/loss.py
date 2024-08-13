@@ -260,7 +260,7 @@ class ESPTarget(_BaseTarget):
         denominator: float,
         weight: float,
         esp_column: str,
-        distance_column: str,
+        inv_distance_column: str,
         charge_label: str,
         ke : float,
     ):
@@ -283,7 +283,7 @@ class ESPTarget(_BaseTarget):
         super().__init__(metric, denominator, weight)
         self.esp_column = esp_column
         self.charge_label = charge_label
-        self.distance_column = distance_column
+        self.inv_distance_column = inv_distance_column
         self.ke = ke
     
     def evaluate_loss(
@@ -300,20 +300,20 @@ class ESPTarget(_BaseTarget):
             if isinstance(molecules, DGLMolecule)
             else molecules.n_atoms_per_molecule
         )
-        # reshape the array incase it is flat
-        distance = labels[self.distance_column]
+        # this should be the inverted (1/distances) between the atom coordinates and grid points 
+        inv_distance = labels[self.inv_distance_column]
 
         # split the total array by the number of atoms per molecule
         charges = torch.split(
             prediction[self.charge_label].squeeze(), n_atoms_per_molecule
         )
-
-        inv_distances = torch.split(distance, n_atoms_per_molecule)
+        #
+        inv_splt_distances = torch.split(inv_distance, n_atoms_per_molecule)
 
         predicted_esp = torch.stack(
             [
                 self.ke * (inv_distance @ charge_slice)
-                for charge_slice, inv_distance in zip(charges, inv_distances)
+                for charge_slice, inv_distance in zip(charges, inv_splt_distances)
             ]
         )
 
@@ -323,6 +323,55 @@ class ESPTarget(_BaseTarget):
             * self.weight
             / self.denominator
         )
+        
+    def target_column(self) -> str:
+        return self.esp_column
+    
+    def report_artifact(
+        self,
+        molecules: typing.Union[DGLMolecule, DGLMoleculeBatch],
+        labels: typing.Dict[str, torch.Tensor],
+        prediction: typing.Dict[str, torch.Tensor],
+        output_folder: pathlib.Path,
+    ):
+        from nagl.reporting import create_molecule_label_report
+        
+        # break up the molecules, predictions and labels and pass to the error function one at a time
+        if isinstance(molecules, DGLMoleculeBatch):
+            molecules = molecules.unbatch()
+        else:
+            molecules = [molecules]
+          
+        n_atoms_per_mol = [molecule.n_atoms for molecule in molecules]
+
+        target_esp = labels[self.esp_column]
+        inv_distance_column = labels[self.inv_distance_column]
+        inv_distances = torch.split(inv_distance_column, n_atoms_per_mol)
+        
+        charges = torch.split(prediction[self.charge_label].squeeze(), n_atoms_per_mol)
+        
+        entries_and_metrics = []
+        for i, molecule in enumerate(molecules):
+            error = self.evaluate_loss(
+                molecules=molecule,
+                labels={
+                    self.inv_distance_column: inv_distances[i],
+                    self.esp_column: target_esp[i],
+                },
+                prediction={self.charge_label: charges[i]}
+            )
+            entries_and_metrics.append(
+                (molecule, error * self.denominator / self.weight)
+            )
+        
+        report_path = output_folder.joinpath(f"{self.esp_column}.html")
+        create_molecule_label_report(
+            entries_and_metrics=entries_and_metrics,
+            metric_label=self.metric,
+            output_path=report_path,
+        )
+
+        return report_path
 
 
 LossCalculator = typing.Union[typing.Literal["ReadoutTarget", "DipoleTarget"], str]
