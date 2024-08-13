@@ -374,7 +374,7 @@ class ESPTarget(_BaseTarget):
         return report_path
 
 
-LossCalculator = typing.Union[typing.Literal["ReadoutTarget", "DipoleTarget"], str]
+LossCalculator = typing.Union[typing.Literal["ReadoutTarget", "DipoleTarget","ESPTarget"], str]
 
 
 def get_loss_function(type_: LossCalculator) -> typing.Type[_BaseTarget]:
@@ -383,5 +383,7 @@ def get_loss_function(type_: LossCalculator) -> typing.Type[_BaseTarget]:
         return ReadoutTarget
     elif type_.lower() == "dipoletarget":
         return DipoleTarget
+    elif type_.lower() == "esptarget":
+        return ESPTarget
     else:
         raise NotImplementedError(f"Loss calculator {type_} not supported.")
