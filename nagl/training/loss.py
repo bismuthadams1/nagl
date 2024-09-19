@@ -273,7 +273,7 @@ class ESPTarget(_BaseTarget):
             weights associated with the edges
         esp_column: str
             column key for the esp data in the labels dictionary
-        distance_column: str
+        inv_distance_column: str
             distance between the conformer points and grid points
         charge_label: str
             key for charges in the labels dictionary

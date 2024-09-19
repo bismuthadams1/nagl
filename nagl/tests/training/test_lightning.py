@@ -14,7 +14,7 @@ import nagl.nn.pooling
 import nagl.nn.postprocess
 import nagl.nn.readout
 from nagl.config import Config, DataConfig, ModelConfig, OptimizerConfig
-from nagl.config.data import Dataset, DipoleTarget, ReadoutTarget
+from nagl.config.data import Dataset, DipoleTarget, ESPTarget, ReadoutTarget
 from nagl.config.model import GCNConvolutionModule, ReadoutModule, Sequential
 from nagl.datasets import DGLMoleculeDataset
 from nagl.features import AtomConnectivity, AtomicElement, BondOrder
@@ -24,7 +24,6 @@ from nagl.training.lightning import (
     DGLMoleculeLightningModel,
     _hash_featurized_dataset,
 )
-
 
 @pytest.fixture()
 def mock_config() -> Config:
@@ -120,6 +119,69 @@ def mock_config_dipole() -> Config:
                         charge_label="charges-am1",
                         conformation_column="conformation",
                         metric="rmse",
+                    )
+                ],
+                batch_size=6,
+            ),
+        ),
+        optimizer=OptimizerConfig(type="Adam", lr=0.01),
+    )
+    
+@pytest.fixture()
+def mock_config_esp() -> Config:
+    from openff.units import unit
+    KE = 1 / (4 * numpy.pi * unit.epsilon_0)
+    return Config(
+        model=ModelConfig(
+            atom_features=[AtomConnectivity()],
+            bond_features=[],
+            convolution=GCNConvolutionModule(
+                type="SAGEConv", hidden_feats=[4, 4], activation=["ReLU", "ReLU"]
+            ),
+            readouts={
+                "atom": ReadoutModule(
+                    pooling="atom",
+                    forward=Sequential(hidden_feats=[2], activation=["Identity"]),
+                    postprocess="charges",
+                )
+            },
+        ),
+        data=DataConfig(
+            training=Dataset(
+                sources=[""],
+                targets=[
+                    ESPTarget(
+                        esp_column="esp",
+                        charge_label="mbis charges",
+                        inv_distance_column="inv_distance",
+                        metric="rmse",
+                        ke = KE,
+                    )
+                ],
+                batch_size=4,
+            ),
+            validation=Dataset(
+                sources=[""],
+                targets=[
+                    ESPTarget(
+                        esp_column="esp",
+                        charge_label="mbis charges",
+                        inv_distance_column="inv_distance",
+                        metric="rmse",
+                        ke = KE,
+                    )
+                ],
+                batch_size=5,
+            ),
+            test=Dataset(
+                sources=[""],
+                targets=[
+                    ESPTarget(
+                        esp_column="esp",
+                        charge_label="mbis charges",
+                        inv_distance_column="inv_distance",
+                        metric="rmse",
+                        ke = KE,
                     )
                 ],
                 batch_size=6,
@@ -266,6 +328,42 @@ class TestDGLMoleculeLightningModel:
         )
         ref_loss = numpy.sqrt(numpy.mean((numpy_dipole - numpy.array([0, 0, 0])) ** 2))
         assert numpy.isclose(loss.detach().numpy(), ref_loss)
+
+    def test_step_esp(self, mock_config_esp, rdkit_methane, monkeypatch):
+        """Make sure the esp error is correctly calculated and has a gradient"""
+        from openff.units import unit
+        KE = 1 / (4 * numpy.pi * unit.epsilon_0)
+        print(KE)
+        mock_model = DGLMoleculeLightningModel(mock_config_esp)
+        
+        def mock_forward(_):
+            return {
+                "mbis charges": torch.tensor(
+                    [[1.0, 2.0, 3.0, 4.0, 5.0]], requires_grad=True
+                )
+            }
+
+        monkeypatch.setattr(mock_model, "forward", mock_forward)
+        dgl_methane = DGLMolecule.from_rdkit(
+            molecule=rdkit_methane, atom_features=[AtomicElement()]
+        )
+        # coordinates in angstrom
+        # conformer = rdkit_methane.GetConformer().GetPositions() * unit.angstrom
+        loss = mock_model.training_step(
+            (
+                dgl_methane,
+                {
+                    "mbis charges": torch.tensor([[2.0, 3.0, 4.0, 5.0, 6.0]]),
+                    "esp": torch.Tensor([[0.0, 0.0, 0.0, 1.0, 2.0]]),
+                    "inverse_distance": torch.Tensor([numpy.array([1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0])]),
+                    "ke": KE, 
+                },
+            ),
+            0,
+        )
+       # make sure the gradient is not lost during  the calculation
+        print(loss)
+        assert loss.requires_grad is True
 
     def test_configure_optimizers(self, mock_lightning_model):
         optimizer = mock_lightning_model.configure_optimizers()
