@@ -1,0 +1,161 @@
+============================= test session starts ==============================
+platform linux -- Python 3.9.16, pytest-8.3.3, pluggy-1.5.0
+rootdir: /lus/lfs1aip1/home/mlpepper/bismuthadams.mlpepper/repos/nagl
+configfile: pyproject.toml
+collected 12 items
+
+test_lightning.py F......E...E
+
+==================================== ERRORS ====================================
+________ ERROR at setup of TestDGLMoleculeLightningModel.test_step_esp _________
+
+    @pytest.fixture()
+    def mock_config_esp() -> Config:
+        from openff.units import unit
+        KE = 1 / (4 * numpy.pi * unit.epsilon_0)
+        return Config(
+            model=ModelConfig(
+                atom_features=[AtomConnectivity()],
+                bond_features=[],
+                convolution=GCNConvolutionModule(
+                    type="SAGEConv", hidden_feats=[4, 4], activation=["ReLU", "ReLU"]
+                ),
+                readouts={
+                    "atom": ReadoutModule(
+                        pooling="atom",
+                        forward=Sequential(hidden_feats=[2], activation=["Identity"]),
+                        postprocess="charges",
+                    )
+                },
+            ),
+            data=DataConfig(
+                training=Dataset(
+                    sources=[""],
+                    targets=[
+>                       ESPTarget(
+                            esp_column="esp",
+                            charge_label="mbis charges",
+                            inv_distance_column="inv_distance",
+                            metric="rmse",
+                            ke = KE,
+                        )
+                    ],
+                    batch_size=4,
+                ),
+                validation=Dataset(
+                    sources=[""],
+                    targets=[
+                        ESPTarget(
+                            esp_column="esp",
+                            charge_label="mbis charges",
+                            inv_distance_column="inv_distance",
+                            metric="rmse",
+                            ke = KE,
+                        )
+                    ],
+                    batch_size=5,
+                ),
+                test=Dataset(
+                    sources=[""],
+                    targets=[
+                        ESPTarget(
+                            esp_column="esp",
+                            charge_label="mbis charges",
+                            inv_distance_column="inv_distance",
+                            metric="rmse",
+                            ke = KE,
+                        )
+                    ],
+                    batch_size=6,
+                ),
+            ),
+            optimizer=OptimizerConfig(type="Adam", lr=0.01),
+        )
+
+test_lightning.py:153: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+pydantic/dataclasses.py:325: in pydantic.dataclasses._add_pydantic_validation_attributes.new_init
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   pydantic.error_wrappers.ValidationError: 1 validation error for ESPTarget
+E   ke
+E     value is not a valid float (type=type_error.float)
+
+pydantic/dataclasses.py:425: ValidationError
+___________ ERROR at setup of TestDGLMoleculeDataModule.test_prepare ___________
+file /lus/lfs1aip1/home/mlpepper/bismuthadams.mlpepper/repos/nagl/nagl/tests/training/test_lightning.py, line 398
+      def test_prepare(self, tmp_cwd, mock_config, mocker):
+E       fixture 'mocker' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, dgl_methane, doctest_namespace, mock_config, mock_config_dipole, mock_config_esp, mock_lightning_model, monkeypatch, pytestconfig, rdkit_methane, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_cwd, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/lus/lfs1aip1/home/mlpepper/bismuthadams.mlpepper/repos/nagl/nagl/tests/training/test_lightning.py:398
+=================================== FAILURES ===================================
+_________________________ test_hash_featurized_dataset _________________________
+
+tmp_cwd = PosixPath('/local/user/1483800136/pytest-of-bismuthadams.mlpepper/pytest-34/test_hash_featurized_dataset0')
+
+    def test_hash_featurized_dataset(tmp_cwd):
+>       labels = pyarrow.table([["C"]], ["smiles"])
+
+/lus/lfs1aip1/home/mlpepper/bismuthadams.mlpepper/repos/nagl/nagl/tests/training/test_lightning.py:200: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+pyarrow/table.pxi:5135: in pyarrow.lib.table
+    ???
+pyarrow/table.pxi:3969: in pyarrow.lib.Table.from_arrays
+    ???
+pyarrow/table.pxi:1448: in pyarrow.lib._sanitize_arrays
+    ???
+pyarrow/table.pxi:1429: in pyarrow.lib._schema_from_arrays
+    ???
+pyarrow/array.pxi:344: in pyarrow.lib.array
+    ???
+pyarrow/array.pxi:42: in pyarrow.lib._sequence_to_array
+    ???
+pyarrow/error.pxi:154: in pyarrow.lib.pyarrow_internal_check_status
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   pyarrow.lib.ArrowMemoryError: malloc of size 64 failed
+
+pyarrow/error.pxi:91: ArrowMemoryError
+=============================== warnings summary ===============================
+../../../../../micromamba/envs/nagl_2/lib/python3.9/site-packages/lightning_utilities/core/imports.py:13
+  /lus/lfs1aip1/home/mlpepper/bismuthadams.mlpepper/micromamba/envs/nagl_2/lib/python3.9/site-packages/lightning_utilities/core/imports.py:13: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
+    import pkg_resources
+
+../../../../../micromamba/envs/nagl_2/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+  /lus/lfs1aip1/home/mlpepper/bismuthadams.mlpepper/micromamba/envs/nagl_2/lib/python3.9/site-packages/pkg_resources/__init__.py:3144: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../../micromamba/envs/nagl_2/lib/python3.9/site-packages/lightning_fabric/__init__.py:29
+  /lus/lfs1aip1/home/mlpepper/bismuthadams.mlpepper/micromamba/envs/nagl_2/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('lightning_fabric')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    __import__("pkg_resources").declare_namespace(__name__)
+
+../../../../../micromamba/envs/nagl_2/lib/python3.9/site-packages/pytorch_lightning/__init__.py:45
+  /lus/lfs1aip1/home/mlpepper/bismuthadams.mlpepper/micromamba/envs/nagl_2/lib/python3.9/site-packages/pytorch_lightning/__init__.py:45: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('pytorch_lightning')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    __import__("pkg_resources").declare_namespace(__name__)
+
+nagl/tests/training/test_lightning.py::TestDGLMoleculeLightningModel::test_step_readout[training_step]
+nagl/tests/training/test_lightning.py::TestDGLMoleculeLightningModel::test_step_readout[validation_step]
+nagl/tests/training/test_lightning.py::TestDGLMoleculeLightningModel::test_step_readout[test_step]
+nagl/tests/training/test_lightning.py::TestDGLMoleculeLightningModel::test_step_dipole
+  /lus/lfs1aip1/home/mlpepper/bismuthadams.mlpepper/micromamba/envs/nagl_2/lib/python3.9/site-packages/pytorch_lightning/core/module.py:416: UserWarning: You are trying to `self.log()` but the `self.trainer` reference is not registered on the model yet. This is most likely because the model hasn't been passed to the `Trainer`
+    rank_zero_warn(
+
+nagl/tests/training/test_lightning.py::TestDGLMoleculeLightningModel::test_step_dipole
+  /lus/lfs1aip1/home/mlpepper/bismuthadams.mlpepper/repos/nagl/nagl/tests/training/test_lightning.py:318: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at /croot/pytorch_1681837274759/work/torch/csrc/utils/tensor_new.cpp:230.)
+    "conformation": torch.Tensor([conformer.m_as(unit.bohr)]),
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED test_lightning.py::test_hash_featurized_dataset - pyarrow.lib.ArrowMem...
+ERROR test_lightning.py::TestDGLMoleculeLightningModel::test_step_esp - pydan...
+ERROR test_lightning.py::TestDGLMoleculeDataModule::test_prepare
+============== 1 failed, 9 passed, 9 warnings, 2 errors in 10.55s ==============

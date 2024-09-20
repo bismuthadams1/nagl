@@ -301,19 +301,19 @@ class ESPTarget(_BaseTarget):
             else molecules.n_atoms_per_molecule
         )
         # this should be the inverted (1/distances) between the atom coordinates and grid points 
-        inv_distance = labels[self.inv_distance_column]
+        inv_distance = torch.reshape(labels[self.inv_distance_column],(-1,*n_atoms_per_molecule))
 
         # split the total array by the number of atoms per molecule
         charges = torch.split(
             prediction[self.charge_label].squeeze(), n_atoms_per_molecule
         )
         #
-        inv_splt_distances = torch.split(inv_distance, n_atoms_per_molecule)
+        inv_split_distances = torch.split(inv_distance, n_atoms_per_molecule, dim=1)
 
         predicted_esp = torch.stack(
             [
-                self.ke * (inv_distance @ charge_slice)
-                for charge_slice, inv_distance in zip(charges, inv_splt_distances)
+                self.ke * (inv_distance_item @ charge_slice)
+                for charge_slice, inv_distance_item in zip(charges, inv_split_distances)
             ]
         )
 

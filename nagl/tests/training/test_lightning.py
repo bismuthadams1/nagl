@@ -130,7 +130,7 @@ def mock_config_dipole() -> Config:
 @pytest.fixture()
 def mock_config_esp() -> Config:
     from openff.units import unit
-    KE = 1 / (4 * numpy.pi * unit.epsilon_0)
+    KE = (1 / (4 * numpy.pi * unit.epsilon_0)).m
     return Config(
         model=ModelConfig(
             atom_features=[AtomConnectivity()],
@@ -158,7 +158,7 @@ def mock_config_esp() -> Config:
                         ke = KE,
                     )
                 ],
-                batch_size=4,
+                batch_size=1,
             ),
             validation=Dataset(
                 sources=[""],
@@ -171,7 +171,7 @@ def mock_config_esp() -> Config:
                         ke = KE,
                     )
                 ],
-                batch_size=5,
+                batch_size=1,
             ),
             test=Dataset(
                 sources=[""],
@@ -184,7 +184,7 @@ def mock_config_esp() -> Config:
                         ke = KE,
                     )
                 ],
-                batch_size=6,
+                batch_size=1,
             ),
         ),
         optimizer=OptimizerConfig(type="Adam", lr=0.01),
@@ -333,6 +333,7 @@ class TestDGLMoleculeLightningModel:
         """Make sure the esp error is correctly calculated and has a gradient"""
         from openff.units import unit
         KE = 1 / (4 * numpy.pi * unit.epsilon_0)
+        print("ke print:", flush=True)
         print(KE)
         mock_model = DGLMoleculeLightningModel(mock_config_esp)
         
@@ -348,21 +349,28 @@ class TestDGLMoleculeLightningModel:
             molecule=rdkit_methane, atom_features=[AtomicElement()]
         )
         # coordinates in angstrom
-        # conformer = rdkit_methane.GetConformer().GetPositions() * unit.angstrom
         loss = mock_model.training_step(
             (
                 dgl_methane,
                 {
                     "mbis charges": torch.tensor([[2.0, 3.0, 4.0, 5.0, 6.0]]),
-                    "esp": torch.Tensor([[0.0, 0.0, 0.0, 1.0, 2.0]]),
-                    "inverse_distance": torch.Tensor([numpy.array([1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0])]),
-                    "ke": KE, 
+                    "esp": torch.Tensor([[0.0, 0.0, 0.0, 1.0, 2.0,0.0, 0.0, 0.0, 1.0, 2.0]]),
+                    "inv_distance": torch.Tensor([
+                    [1., 1., 1., 1., 1.],
+                    [1., 1., 1., 1., 1.],
+                    [1., 1., 1., 1., 1.],
+                    [1., 1., 1., 1., 1.],
+                    [1., 1., 1., 1., 1.],
+                    [1., 1., 1., 1., 1.],
+                    [1., 1., 1., 1., 1.],
+                    [1., 1., 1., 1., 1.],
+                    [1., 1., 1., 1., 1.],
+                    [1., 1., 1., 1., 1.]]),
                 },
             ),
             0,
         )
        # make sure the gradient is not lost during  the calculation
-        print(loss)
         assert loss.requires_grad is True
 
     def test_configure_optimizers(self, mock_lightning_model):
