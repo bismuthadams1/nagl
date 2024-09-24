@@ -155,6 +155,7 @@ def mock_config_esp() -> Config:
                         charge_label="mbis charges",
                         inv_distance_column="inv_distance",
                         metric="rmse",
+                        esp_length_column="esp_length",
                         ke = KE,
                     )
                 ],
@@ -168,6 +169,7 @@ def mock_config_esp() -> Config:
                         charge_label="mbis charges",
                         inv_distance_column="inv_distance",
                         metric="rmse",
+                        esp_length_column="esp_length",
                         ke = KE,
                     )
                 ],
@@ -181,6 +183,7 @@ def mock_config_esp() -> Config:
                         charge_label="mbis charges",
                         inv_distance_column="inv_distance",
                         metric="rmse",
+                        esp_length_column="esp_length",
                         ke = KE,
                     )
                 ],
@@ -333,8 +336,7 @@ class TestDGLMoleculeLightningModel:
         """Make sure the esp error is correctly calculated and has a gradient"""
         from openff.units import unit
         KE = 1 / (4 * numpy.pi * unit.epsilon_0)
-        print("ke print:", flush=True)
-        print(KE)
+
         mock_model = DGLMoleculeLightningModel(mock_config_esp)
         
         def mock_forward(_):
@@ -491,7 +493,7 @@ class TestDGLMoleculeLightningModel:
             molecule=rdkit_nitrobromomolecule, atom_features=[AtomicElement()]
         )
 
-  # coordinates in angstrom
+        # coordinates in angstrom
         loss = mock_model.training_step(
             (
                 dgl_nitrobromolecule,
@@ -504,7 +506,10 @@ class TestDGLMoleculeLightningModel:
             0,
         )
         #calculate the numpy version
-        numpy_esp = KE.m * ( numpy.array(inv_distance).reshape(-1,len(numpy.array(mbis_charges))) @ numpy.array(mbis_charges))
+        numpy_esp = KE.m * (
+            numpy.array(inv_distance).reshape(-1,len(numpy.array(mbis_charges)))
+            @ numpy.array(mbis_charges)
+        )
         
         ref_loss = numpy.sqrt(numpy.mean((numpy_esp - numpy.array(esp)) ** 2))
          

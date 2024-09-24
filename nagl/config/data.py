@@ -70,11 +70,18 @@ class ESPTarget(_BaseTarget):
         ...,
         description="The name of the readout model that predicts the atomic charge to calculate the dipole.",
     )
+
+    esp_length_column: str = pydantic.Field(
+        ...,
+        description="List of lengths the esps associated with the conformers"
+    )
     
     ke: float = pydantic.Field(
         ...,                     
         description="The Coulomb constant, which should reflect the units used in the inv_distance",
     )
+    
+    #Optional[str] add multipoles here 
 
 @pydantic.dataclasses.dataclass(config={"extra": pydantic.Extra.forbid})
 class Dataset:

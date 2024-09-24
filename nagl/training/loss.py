@@ -2,6 +2,7 @@
 import abc
 import pathlib
 import typing
+import itertools
 
 import torch
 
@@ -261,6 +262,7 @@ class ESPTarget(_BaseTarget):
         weight: float,
         esp_column: str,
         inv_distance_column: str,
+        esp_length_column: str,
         charge_label: str,
         ke : float,
     ):
@@ -284,6 +286,7 @@ class ESPTarget(_BaseTarget):
         self.esp_column = esp_column
         self.charge_label = charge_label
         self.inv_distance_column = inv_distance_column
+        self.esp_length_column = esp_length_column
         self.ke = ke
     
     def evaluate_loss(
@@ -293,22 +296,42 @@ class ESPTarget(_BaseTarget):
         prediction: typing.Dict[str, torch.Tensor],
     ) -> torch.Tensor:
         metric_func = get_metric(self.metric)
-        # esp list already flat
-        targed_esp = labels[self.esp_column]
+        # split esp by the supplied length column, if batched, this column should be a list. 
+        print('split list')
+        print(labels[self.esp_length_column])
+        targed_esps = torch.cat(torch.split(
+            labels[self.esp_column],
+            list(itertools.chain(*labels[self.esp_length_column]))
+        ))
         n_atoms_per_molecule = (
             (molecules.n_atoms,)
             if isinstance(molecules, DGLMolecule)
             else molecules.n_atoms_per_molecule
         )
         # this should be the inverted (1/distances) between the atom coordinates and grid points 
-        inv_distance = torch.reshape(labels[self.inv_distance_column],(-1,*n_atoms_per_molecule))
-
+        # inv_distance = torch.cat(torch.split(
+        #     torch.reshape(labels[self.inv_distance_column],(-1,*n_atoms_per_molecule)), 
+        #     list(itertools.chain(*labels[self.esp_length_column]))
+        # # ))
+        # inv_distance_column = torch.reshape(labels[self.inv_distance_column],(-1,*n_atoms_per_molecule))
+        
+        # inv_distance = torch.split(
+        #     labels[self.inv_distance_column], 
+        # )
+        inv_distances = torch.split(
+            labels[self.inv_distance_column],list(itertools.chain(*labels[self.esp_length_column]))
+        )
+        print(inv_distances)
+        for index,in_distance in enumerate(inv_distances):
+            in_distance.reshape(n_atoms_per_molecule[index])
+        print('after reshaping')
+        print(inv_distances)
         # split the total array by the number of atoms per molecule
         charges = torch.split(
             prediction[self.charge_label].squeeze(), n_atoms_per_molecule
         )
         #
-        inv_split_distances = torch.split(inv_distance, n_atoms_per_molecule, dim=1)
+        inv_split_distances = torch.split(inv_distances, n_atoms_per_molecule, dim=1)
 
         predicted_esp = torch.stack(
             [
@@ -319,7 +342,7 @@ class ESPTarget(_BaseTarget):
 
         # get the error across all dipoles
         return (
-            metric_func(predicted_esp, targed_esp)
+            metric_func(predicted_esp, targed_esps)
             * self.weight
             / self.denominator
         )

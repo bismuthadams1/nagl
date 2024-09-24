@@ -32,5 +32,5 @@ class DGLMoleculeModel(torch.nn.Module):
             readout_type: readout_module(molecule)
             for readout_type, readout_module in self.readout_modules.items()
         }
-
+        
         return readouts
