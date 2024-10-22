@@ -53,7 +53,35 @@ class DipoleTarget(_BaseTarget):
         ...,
         description="The name of the readout model that predicts the atomic charge to calculate the dipole.",
     )
+    
+@pydantic.dataclasses.dataclass(config={"extra": pydantic.Extra.forbid})
+class ESPTarget(_BaseTarget):
+    """Defines a ESP specific target to train / evaluate against"""
+    
+    esp_column: str = pydantic.Field(
+        ...,
+        description="The column in the source field that contains the dipole data in Eh/e"
+    ) 
+    inv_distance_column: str  = pydantic.Field(
+        ...,
+        description="The column in the source field that contains the inverse distance between the conformer and the grid"
+    )
+    charge_label: str = pydantic.Field(
+        ...,
+        description="The name of the readout model that predicts the atomic charge to calculate the dipole.",
+    )
 
+    esp_length_column: str = pydantic.Field(
+        ...,
+        description="List of lengths the esps associated with the conformers"
+    )
+    
+    ke: float = pydantic.Field(
+        ...,                     
+        description="The Coulomb constant, which should reflect the units used in the inv_distance",
+    )
+    
+    #Optional[str] add multipoles here 
 
 @pydantic.dataclasses.dataclass(config={"extra": pydantic.Extra.forbid})
 class Dataset:
@@ -63,7 +91,7 @@ class Dataset:
     sources: typing.Optional[typing.List[str]] = pydantic.Field(
         None, description="The paths to the data."
     )
-    targets: typing.List[typing.Union[ReadoutTarget, DipoleTarget]] = pydantic.Field(
+    targets: typing.List[typing.Union[ReadoutTarget, DipoleTarget, ESPTarget]] = pydantic.Field(
         ..., description="The targets to train / evaluate against."
     )
     batch_size: typing.Optional[int] = pydantic.Field(
