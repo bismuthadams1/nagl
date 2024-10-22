@@ -307,8 +307,8 @@ class ESPTarget(_BaseTarget):
                 else item for item in labels[self.esp_length_column]
             )
         )
-        print('processed esp lengths')
-        print(esp_lengths)
+        # print('processed esp lengths')
+        # print(esp_lengths)
 
         #here we grab the number of atoms per molecule
         n_atoms_per_molecule = (
@@ -323,10 +323,10 @@ class ESPTarget(_BaseTarget):
             esp_lengths)
         ).flatten()
         
-        print('target esps')
-        print(target_esps)
-        print('target esps shape')
-        print(target_esps.shape)
+        # print('target esps')
+        # print(target_esps)
+        # print('target esps shape')
+        # print(target_esps.shape)
 
         #work out the inv distance chunks, these will be esp length * num_atoms
         inv_distance_chunks = [
@@ -350,10 +350,10 @@ class ESPTarget(_BaseTarget):
         ]
         )
         
-        print('predicted esps')
-        print(predicted_esps)
-        print('predicted_esps shape')
-        print(predicted_esps.shape)
+        # print('predicted esps')
+        # print(predicted_esps)
+        # print('predicted_esps shape')
+        # print(predicted_esps.shape)
         # get the error across all dipoles
         return (
             metric_func(predicted_esps, target_esps)
@@ -384,8 +384,8 @@ class ESPTarget(_BaseTarget):
         esp_lengths = list(
             itertools.chain.from_iterable([item] if isinstance(item, int) else item for item in labels[self.esp_length_column])
         )
-        print('esps lengths in loss bit')
-        print(esp_lengths)
+        # print('esps lengths in loss bit')
+        # print(esp_lengths)
         
         target_esps = torch.split(
             labels[self.esp_column],
@@ -393,10 +393,10 @@ class ESPTarget(_BaseTarget):
         )
            #  .flatten()     # torch.cat(
            
-        esp_length_column = labels[self.esp_length_column]
+        # esp_length_column = labels[self.esp_length_column]
         
-        print('esp length column')
-        print(esp_length_column)
+        # print('esp length column')
+        # print(esp_length_column)
         
         #work out the inv distance chunks, these will be esp length * num_atoms
         inv_distance_chunks = [
