@@ -139,9 +139,9 @@ class DGLMoleculeDataset(Dataset):
             DGLMolecule.from_rdkit if molecule_to_dgl is None else molecule_to_dgl
         )
 
-        table = pyarrow.parquet.read_table(paths, columns=columns)
-
-        label_list = table.to_pylist()
+        table = pl.scan_parquet(paths, low_memory=True)
+        
+        label_list = table.collect().to_dicts()
         label_list = (
             label_list if progress_iterator is None else progress_iterator(label_list)
         )
@@ -219,15 +219,20 @@ class DGLMoleculeDataset(Dataset):
 
         required_columns = ["smiles", "atom_features", "bond_features"]
         columns = None if columns is None else required_columns + columns
+<<<<<<< HEAD
+
+        table = pl.scan_parquet(paths, low_memory=True)
+=======
         
         # table = pyarrow.parquet.read_table(paths, columns=columns)
         table = pl.scan_parquet(paths)#, columns=columns)
+>>>>>>> main
         
         label_list = table.collect().to_dicts()
         label_list = (
             label_list if progress_iterator is None else progress_iterator(label_list)
         )
-
+        
         with get_map_func(n_processes) as map_func:
             entries = list(map_func(cls._entry_from_featurized, label_list))
 
