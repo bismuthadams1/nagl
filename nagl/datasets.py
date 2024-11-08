@@ -6,6 +6,7 @@ import typing
 import dgl
 import pyarrow.parquet
 import torch
+import polars as pl
 from rdkit import Chem
 from torch.utils.data import Dataset
 
@@ -218,8 +219,14 @@ class DGLMoleculeDataset(Dataset):
 
         required_columns = ["smiles", "atom_features", "bond_features"]
         columns = None if columns is None else required_columns + columns
+<<<<<<< HEAD
 
         table = pl.scan_parquet(paths, low_memory=True)
+=======
+        
+        # table = pyarrow.parquet.read_table(paths, columns=columns)
+        table = pl.scan_parquet(paths)#, columns=columns)
+>>>>>>> main
         
         label_list = table.collect().to_dicts()
         label_list = (
