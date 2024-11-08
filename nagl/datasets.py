@@ -138,9 +138,9 @@ class DGLMoleculeDataset(Dataset):
             DGLMolecule.from_rdkit if molecule_to_dgl is None else molecule_to_dgl
         )
 
-        table = pyarrow.parquet.read_table(paths, columns=columns)
-
-        label_list = table.to_pylist()
+        table = pl.scan_parquet(paths, low_memory=True)
+        
+        label_list = table.collect().to_dicts()
         label_list = (
             label_list if progress_iterator is None else progress_iterator(label_list)
         )
