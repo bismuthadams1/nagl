@@ -219,8 +219,7 @@ class DGLMoleculeDataset(Dataset):
         required_columns = ["smiles", "atom_features", "bond_features"]
         columns = None if columns is None else required_columns + columns
 
-        # table = pyarrow.parquet.read_table(paths, columns=columns)
-        table = pl.scan_parquet(paths, low_memory=True)#, columns=columns)
+        table = pl.scan_parquet(paths, low_memory=True)
         
         label_list = table.collect().to_dicts()
         label_list = (
