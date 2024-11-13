@@ -52,7 +52,7 @@ class BondPoolingLayer(PoolingLayer):
     def n_feature_columns(cls):
         return 2
 
-    def __init__(self, layers: torch.Union[Sequential, torch.nn.Module]):
+    def __init__(self, layers: typing.Union[Sequential, torch.nn.Module]):
         super().__init__()
         self.layers = layers
 

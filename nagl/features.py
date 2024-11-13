@@ -9,7 +9,7 @@ from rdkit import Chem
 from nagl.utilities.molecule import BOND_TYPE_TO_ORDER, normalize_molecule
 from nagl.utilities.resonance import enumerate_resonance_forms
 
-_DEFAULT_ELEMENTS = ["H", "C", "N", "O", "F", "Cl", "Br", "S", "P"]
+_DEFAULT_ELEMENTS = ["H", "C", "N", "O", "F", "Cl", "Br", "S", "P", "I"]
 _DEFAULT_CONNECTIVITIES = [1, 2, 3, 4]
 _DEFAULT_CHARGES = [-3, -2, -1, 0, 1, 2, 3]
 
