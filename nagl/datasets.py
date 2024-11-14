@@ -40,6 +40,7 @@ class DGLMoleculeDataset(Dataset):
             entries: The list of entries to add to the data set.
         """
         self._entries: typing.List[DGLMoleculeDatasetEntry] = entries
+        self.stream = self.stream
 
     @classmethod
     def from_molecules(
@@ -114,6 +115,7 @@ class DGLMoleculeDataset(Dataset):
         molecule_to_dgl: typing.Optional[MoleculeToDGLFunc] = None,
         progress_iterator: typing.Optional[typing.Any] = None,
         n_processes: int = 0,
+        streaming: bool = False,
     ) -> "DGLMoleculeDataset":
         """Creates a data set from unfeaturized data stored in parquet file.
 
@@ -138,8 +140,10 @@ class DGLMoleculeDataset(Dataset):
         molecule_to_dgl = (
             DGLMolecule.from_rdkit if molecule_to_dgl is None else molecule_to_dgl
         )
-
-        table = pl.scan_parquet(paths, low_memory=True)
+        if streaming:
+            table = pl.scan_parquet(paths, low_memory=True)
+        else:
+            table = pyarrow.parquet.read_table(paths, columns=columns)
         
         label_list = table.collect().to_dicts()
         label_list = (
@@ -199,6 +203,7 @@ class DGLMoleculeDataset(Dataset):
         columns: typing.Optional[typing.List[str]],
         progress_iterator: typing.Optional[typing.Any] = None,
         n_processes: int = 0,
+        streaming: bool = False
     ) -> "DGLMoleculeDataset":
         """Creates a data set from unfeaturized data stored in parquet file.
 
@@ -221,7 +226,11 @@ class DGLMoleculeDataset(Dataset):
         columns = None if columns is None else required_columns + columns
         
         # table = pyarrow.parquet.read_table(paths, columns=columns)
-        table = pl.scan_parquet(paths)#, columns=columns)
+        if streaming:
+            table = pl.scan_parquet(paths)
+        else:
+            table = pyarrow.parquet.read_table(paths, columns=columns)
+
         
         label_list = table.collect().to_dicts()
         label_list = (
