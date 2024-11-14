@@ -212,9 +212,9 @@ class DGLMolecule(_BaseDGLModel):
         """Converts this DGL molecule into an RDkit molecule object."""
 
         molecule = Chem.RWMol()
-
-        atomic_numbers = self.graph.ndata["atomic_number"].detach().numpy().tolist()
-        formal_charges = self.graph.ndata["formal_charge"].detach().numpy().tolist()
+        #add .cpu() for writing memory from gpu to cpu
+        atomic_numbers = self.graph.ndata["atomic_number"].cpu().detach().numpy().tolist()
+        formal_charges = self.graph.ndata["formal_charge"].cpu().detach().numpy().tolist()
 
         for i, (atomic_num, formal_charge) in enumerate(
             zip(atomic_numbers, formal_charges)
