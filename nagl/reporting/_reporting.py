@@ -39,14 +39,14 @@ def _draw_molecule_with_atom_labels(
 
     pred_molecule = Chem.Mol(molecule)
 
-    for atom, label in zip(pred_molecule.GetAtoms(), pred.detach().numpy()):
+    for atom, label in zip(pred_molecule.GetAtoms(), pred.cpu().detach().numpy()):
         atom.SetProp("atomNote", str(f"{float(label):.3f}"))
 
     Draw.PrepareMolForDrawing(pred_molecule)
 
     ref_molecule = Chem.Mol(molecule)
 
-    for atom, label in zip(ref_molecule.GetAtoms(), ref.detach().numpy()):
+    for atom, label in zip(ref_molecule.GetAtoms(), ref.cpu().detach().numpy()):
         atom.SetProp("atomNote", str(f"{float(label):.3f}"))
 
     Draw.PrepareMolForDrawing(ref_molecule)
