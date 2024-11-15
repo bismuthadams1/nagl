@@ -282,6 +282,7 @@ class DGLMoleculeDataModule(pl.LightningDataModule):
         cache_dir: typing.Optional[pathlib.Path] = None,
         n_workers: int = 0,
         progress_bar: bool = True,
+        streaming: bool = False,
     ):
         """
 

@@ -40,7 +40,6 @@ class DGLMoleculeDataset(Dataset):
             entries: The list of entries to add to the data set.
         """
         self._entries: typing.List[DGLMoleculeDatasetEntry] = entries
-        self.stream = self.stream
 
     @classmethod
     def from_molecules(
@@ -142,10 +141,11 @@ class DGLMoleculeDataset(Dataset):
         )
         if streaming:
             table = pl.scan_parquet(paths, low_memory=True)
+            label_list = table.collect().to_dicts()
         else:
             table = pyarrow.parquet.read_table(paths, columns=columns)
+            label_list = table.to_pylist()
         
-        label_list = table.collect().to_dicts()
         label_list = (
             label_list if progress_iterator is None else progress_iterator(label_list)
         )
@@ -227,12 +227,12 @@ class DGLMoleculeDataset(Dataset):
         
         # table = pyarrow.parquet.read_table(paths, columns=columns)
         if streaming:
-            table = pl.scan_parquet(paths)
+            table = pl.scan_parquet(paths, low_memory=True)
+            label_list = table.collect().to_dicts()
         else:
             table = pyarrow.parquet.read_table(paths, columns=columns)
+            label_list = table.to_pylist()
 
-        
-        label_list = table.collect().to_dicts()
         label_list = (
             label_list if progress_iterator is None else progress_iterator(label_list)
         )
