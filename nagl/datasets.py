@@ -2,11 +2,14 @@ import functools
 import logging
 import pathlib
 import typing
+import gc
+
 
 import dgl
 import pyarrow.parquet
 import torch
 import polars as pl
+import pyarrow.parquet as pq
 from rdkit import Chem
 from torch.utils.data import Dataset
 
@@ -138,10 +141,12 @@ class DGLMoleculeDataset(Dataset):
         molecule_to_dgl = (
             DGLMolecule.from_rdkit if molecule_to_dgl is None else molecule_to_dgl
         )
-
-        table = pl.scan_parquet(paths, low_memory=True)
-        
-        label_list = table.collect().to_dicts()
+        logging.info('scanning parquet')
+        table = pl.scan_parquet(paths, low_memory=True, cache=False)
+        logging.info('parquet scanned')
+        logging.info('collect table')
+        label_list = table.collect(streaming=True).to_dicts()
+        logging.info('table collected')
         label_list = (
             label_list if progress_iterator is None else progress_iterator(label_list)
         )
@@ -152,6 +157,48 @@ class DGLMoleculeDataset(Dataset):
             bond_features=bond_features,
             molecule_to_dgl=molecule_to_dgl,
         )
+        # # dataset = DGLMoleculeDataset()
+        # featurize_func = functools.partial(
+        #     cls._entry_from_unfeaturized,
+        #     atom_features=atom_features,
+        #     bond_features=bond_features,
+        #     molecule_to_dgl=molecule_to_dgl,
+        # )
+    
+        # Process each file separately
+        # logging.info('processing in batches')
+        # for path in paths:
+        #     logging.info(f'Processing file: {path}')
+        #     parquet_file = pq.ParquetFile(path)
+
+        #     # Adjust the batch size based on your memory constraints
+        #     batch_size = 1000  # Adjust as needed
+
+        #     # Iterate over the data in batches
+        #     for batch in parquet_file.iter_batches(batch_size=batch_size, columns=columns):
+        #         df_batch = pl.from_arrow(batch)
+
+        #         # Create an iterator over rows
+        #         if progress_iterator is not None:
+        #             iterator = progress_iterator(df_batch.iter_rows(named=True))
+        #         else:
+        #             iterator = df_batch.iter_rows(named=True)
+
+        #         # Process entries using multiprocessing if specified
+        #         if n_processes > 0:
+        #             with get_map_func(n_processes) as map_func:
+        #                 entries = list(map_func(featurize_func, iterator))
+        #         else:
+        #             entries = [featurize_func(label_dict) for label_dict in iterator]
+
+        #         # Add entries to the dataset
+        #         dataset.extend(entries)
+
+        #         # Clean up to free memory
+        #         del df_batch
+        #         del entries
+        #         gc.collect()
+
 
         with get_map_func(n_processes) as map_func:
             entries = list(map_func(featurize_func, label_list))
@@ -219,22 +266,20 @@ class DGLMoleculeDataset(Dataset):
 
         required_columns = ["smiles", "atom_features", "bond_features"]
         columns = None if columns is None else required_columns + columns
-<<<<<<< HEAD
+        # logging.info('scanning parquet')
+        # # table = pyarrow.parquet.read_table(paths, columns=columns)
+        # table = pl.scan_parquet(paths, low_memory=True, cache=False)
+        # logging.info('parquet scanned')
+        # logging.info('collect table')
+        # label_list = table.collect(streaming=True).to_dicts()
+        # logging.info('table collected')
 
-        table = pl.scan_parquet(paths, low_memory=True)
-=======
+        # label_list = (
+        #     label_list if progress_iterator is None else progress_iterator(label_list)
+        # )
         
-        # table = pyarrow.parquet.read_table(paths, columns=columns)
-        table = pl.scan_parquet(paths)#, columns=columns)
->>>>>>> main
-        
-        label_list = table.collect().to_dicts()
-        label_list = (
-            label_list if progress_iterator is None else progress_iterator(label_list)
-        )
-        
-        with get_map_func(n_processes) as map_func:
-            entries = list(map_func(cls._entry_from_featurized, label_list))
+        # with get_map_func(n_processes) as map_func:
+        #     entries = list(map_func(cls._entry_from_featurized, label_list))
 
         return DGLMoleculeDataset(entries)
 
