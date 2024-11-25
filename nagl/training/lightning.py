@@ -340,14 +340,14 @@ class DGLMoleculeDataModule(pl.LightningDataModule):
                 if dataset_config.batch_size is None
                 else dataset_config.batch_size
             )
-            cpus_for_dataloader = os.cpu_count()
-            msg = f"number of cpus available for dataloader: {cpus_for_dataloader}"
-            logging.info(msg)
+            # cpus_for_dataloader = os.cpu_count()
+            # msg = f"number of cpus available for dataloader: {cpus_for_dataloader}"
+            # logging.info(msg)
             return DataLoader(
                 dataset=target_data,
                 batch_size=batch_size,
                 shuffle=False,
-                num_workers=cpus_for_dataloader,   #modify this 
+                # num_workers=8,   #modify this 
                 collate_fn=collate_dgl_molecules,
             )
 
