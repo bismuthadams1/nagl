@@ -347,7 +347,7 @@ class DGLMoleculeDataModule(pl.LightningDataModule):
                 dataset=target_data,
                 batch_size=batch_size,
                 shuffle=False,
-                # num_workers=8,   #modify this 
+                # num_workers=cpus_for_dataloader,   #modify this 
                 collate_fn=collate_dgl_molecules,
             )
 
@@ -382,7 +382,7 @@ class DGLMoleculeDataModule(pl.LightningDataModule):
             progress_bar = functools.partial(
                 rich.progress.track, description=f"featurizing {stage} set"
             )
-
+            logging.info('preparing unfeaturized')
             dataset = DGLMoleculeDataset.from_unfeaturized(
                 [pathlib.Path(path) for path in stage_paths],
                 columns=columns,
@@ -392,7 +392,7 @@ class DGLMoleculeDataModule(pl.LightningDataModule):
                 progress_iterator=None if not self._progress_bar else progress_bar,
                 n_processes=self._n_workers,
             )
-
+            logging.info('featurized prepared')
             self._data_sets[stage] = dataset
 
             if self._cache_dir is not None:
