@@ -397,7 +397,10 @@ class DGLMoleculeDataModule(pl.LightningDataModule):
 
             if self._cache_dir is not None:
                 self._cache_dir.mkdir(parents=True, exist_ok=True)
-                pyarrow.parquet.write_table(dataset.to_table(), cached_path)
+                logging.info('writing cache table')
+                #add batch size and write batch size here to avoid memory spikes with large grids
+                # pyarrow.parquet.write_table(dataset.to_table(), cached_path, write_batch_size=500) 
+                dataset.to_parquet(cached_path, batch_size=1000)
 
     def setup(self, stage: typing.Optional[str] = None):
         if self._cache_dir is None:

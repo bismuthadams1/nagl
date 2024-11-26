@@ -4,12 +4,12 @@ import pathlib
 import typing
 import gc
 
-
 import dgl
 import pyarrow.parquet
 import torch
 import polars as pl
 import pyarrow.parquet as pq
+import pyarrow as pa
 from rdkit import Chem
 from torch.utils.data import Dataset
 
@@ -145,11 +145,17 @@ class DGLMoleculeDataset(Dataset):
         table = pl.scan_parquet(paths, low_memory=True, cache=False)
         logging.info('parquet scanned')
         logging.info('collect table')
-        label_list = table.collect(streaming=True).to_dicts()
+        label_list = table.collect(streaming=True)
         logging.info('table collected')
-        label_list = (
-            label_list if progress_iterator is None else progress_iterator(label_list)
-        )
+        logging.info('setting up progress iterator')
+        if progress_iterator is not None:
+            iterator = progress_iterator(label_list.iter_rows(named=True))
+        else:
+            iterator = label_list.iter_rows(named=True)
+            
+        # label_list = (
+        #     label_list if progress_iterator is None else progress_iterator(label_list)
+        # )
 
         featurize_func = functools.partial(
             cls._entry_from_unfeaturized,
@@ -157,53 +163,11 @@ class DGLMoleculeDataset(Dataset):
             bond_features=bond_features,
             molecule_to_dgl=molecule_to_dgl,
         )
-        # dataset = DGLMoleculeDataset()
-        # featurize_func = functools.partial(
-        #     cls._entry_from_unfeaturized,
-        #     atom_features=atom_features,
-        #     bond_features=bond_features,
-        #     molecule_to_dgl=molecule_to_dgl,
-        # )
-        dataset = []
-        # Process each file separately
-        logging.info('processing in batches')
-        for path in paths:
-            logging.info(f'Processing file: {path}')
-            parquet_file = pq.ParquetFile(path)
+        logging.info('process entries')
+        with get_map_func(n_processes) as map_func:
+            entries = list(map_func(featurize_func, iterator))
 
-            # Adjust the batch size based on your memory constraints
-            batch_size = 1000  # Adjust as needed
-
-            # Iterate over the data in batches
-            for batch in parquet_file.iter_batches(batch_size=batch_size, columns=columns):
-                df_batch = pl.from_arrow(batch)
-
-                # Create an iterator over rows
-                if progress_iterator is not None:
-                    iterator = progress_iterator(df_batch.iter_rows(named=True))
-                else:
-                    iterator = df_batch.iter_rows(named=True)
-
-                # Process entries using multiprocessing if specified
-                if n_processes > 0:
-                    with get_map_func(n_processes) as map_func:
-                        entries = list(map_func(featurize_func, iterator))
-                else:
-                    entries = [featurize_func(label_dict) for label_dict in iterator]
-
-                # Add entries to the dataset
-                dataset.extend(entries)
-
-                # Clean up to free memory
-                del df_batch
-                del entries
-                gc.collect()
-
-
-        # with get_map_func(n_processes) as map_func:
-        #     entries = list(map_func(featurize_func, label_list))
-
-        return DGLMoleculeDataset(dataset)
+        return DGLMoleculeDataset(entries)
 
     @classmethod
     def _entry_from_featurized(cls, labels: typing.Dict[str, typing.Any]):
@@ -327,6 +291,84 @@ class DGLMoleculeDataset(Dataset):
 
         table = pyarrow.table([*zip(*rows)], required_columns + label_columns)
         return table
+    
+    def to_parquet(self, cached_path: str, batch_size: int = 1000):
+        """Writes the dataset to a Parquet file in batches to avoid high memory usage."""
+        required_columns = ["smiles", "atom_features", "bond_features"]
+        label_columns = [] if len(self._entries) == 0 else [*self._entries[0][1]]
+
+        num_entries = len(self._entries)
+        first_batch = True
+        writer = None
+
+        for start_idx in range(0, num_entries, batch_size):
+            end_idx = min(start_idx + batch_size, num_entries)
+            batch_entries = self._entries[start_idx:end_idx]
+
+            smiles_list = []
+            atom_features_list = []
+            bond_features_list = []
+            label_values = {label: [] for label in label_columns}
+
+            for dgl_molecule, labels in batch_entries:
+                rdkit_molecule = dgl_molecule.to_rdkit()
+                smiles = molecule_to_mapped_smiles(rdkit_molecule)
+                smiles_list.append(smiles)
+
+                atom_features = (
+                    None
+                    if dgl_molecule.atom_features is None
+                    else dgl_molecule.atom_features.detach().cpu().numpy()
+                )
+                if atom_features is not None:
+                    atom_features = atom_features.tolist()
+                atom_features_list.append(atom_features)
+
+                bond_features = (
+                    None
+                    if dgl_molecule.bond_features is None
+                    else dgl_molecule.bond_features.detach().cpu().numpy()
+                )
+                if bond_features is not None:
+                    bond_features = bond_features.tolist()
+                bond_features_list.append(bond_features)
+
+                for label in label_columns:
+                    label_value = labels[label].detach().cpu().numpy()
+                    label_value = label_value.tolist()
+                    label_values[label].append(label_value)
+
+            # Create PyArrow arrays with appropriate types
+            arrays = [
+                pa.array(smiles_list, type=pa.string()),
+                pa.array(atom_features_list),
+                pa.array(bond_features_list),
+            ]
+
+            for label in label_columns:
+                label_data = label_values[label]
+                # Determine the appropriate type based on your label data
+                # For example, if labels are lists of floats:
+                arrays.append(pa.array(label_data, type=pa.list_(pa.float32())))
+
+            batch_table = pa.Table.from_arrays(arrays, names=required_columns + label_columns)
+
+            if first_batch:
+                # Initialize ParquetWriter with the schema from the first batch
+                writer = pq.ParquetWriter(cached_path, batch_table.schema)
+                first_batch = False
+
+            writer.write_table(batch_table)
+
+            # Clean up
+            del batch_entries
+            del smiles_list, atom_features_list, bond_features_list, label_values
+            del batch_table
+            gc.collect()
+
+        if writer:
+            writer.close()
+
 
     def __len__(self) -> int:
         return len(self._entries)
