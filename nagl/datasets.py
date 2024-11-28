@@ -2,10 +2,7 @@ import functools
 import logging
 import pathlib
 import typing
-<<<<<<< HEAD
 import gc
-=======
->>>>>>> 807cb68f1e51c85ecb73f16a7d2bdd89b7961320
 
 import dgl
 import pyarrow.parquet
@@ -352,7 +349,7 @@ class DGLMoleculeDataset(Dataset):
                 label_data = label_values[label]
                 # Determine the appropriate type based on your label data
                 # For example, if labels are lists of floats:
-                arrays.append(pa.array(label_data, type=pa.list_(pa.float32())))
+                arrays.append(pa.array(label_data))
 
             batch_table = pa.Table.from_arrays(arrays, names=required_columns + label_columns)
 
