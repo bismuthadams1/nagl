@@ -152,10 +152,7 @@ class DGLMoleculeDataset(Dataset):
             iterator = progress_iterator(label_list.iter_rows(named=True))
         else:
             iterator = label_list.iter_rows(named=True)
-            
-        # label_list = (
-        #     label_list if progress_iterator is None else progress_iterator(label_list)
-        # )
+        
 
         featurize_func = functools.partial(
             cls._entry_from_unfeaturized,
@@ -360,7 +357,7 @@ class DGLMoleculeDataset(Dataset):
 
             writer.write_table(batch_table)
 
-            # Clean up
+            # Clean up to avoid large memory accumulation
             del batch_entries
             del smiles_list, atom_features_list, bond_features_list, label_values
             del batch_table

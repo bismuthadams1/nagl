@@ -129,7 +129,7 @@ class DGLMolecule(_BaseDGLModel):
         ), "``bond_features`` and ``bond_feature_tensor`` are mutually exclusive."
 
         molecule = Chem.Mol(molecule)
-        Chem.Kekulize(molecule)
+        Chem.Kekulize(molecule,clearAromaticFlags=True) 
 
         # Create the bond tensors.
         indices_a = []

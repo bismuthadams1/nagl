@@ -12,6 +12,7 @@ BOND_TYPE_TO_ORDER = {
     Chem.BondType.SINGLE: 1,
     Chem.BondType.DOUBLE: 2,
     Chem.BondType.TRIPLE: 3,
+    # Chem.BondType.AROMATIC: 1.5,
 }
 BOND_ORDER_TO_TYPE = {order: type_ for type_, order in BOND_TYPE_TO_ORDER.items()}
 
