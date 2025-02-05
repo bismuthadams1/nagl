@@ -107,3 +107,9 @@ ENV/
 
 # PyCharm
 .idea
+
+#Mac stuff
+.DS_Store
+
+#vscode stuff
+.vscode/settings.json
