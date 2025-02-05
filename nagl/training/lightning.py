@@ -340,14 +340,12 @@ class DGLMoleculeDataModule(pl.LightningDataModule):
                 if dataset_config.batch_size is None
                 else dataset_config.batch_size
             )
-            # cpus_for_dataloader = os.cpu_count()
-            # msg = f"number of cpus available for dataloader: {cpus_for_dataloader}"
-            # logging.info(msg)
+
             return DataLoader(
                 dataset=target_data,
                 batch_size=batch_size,
                 shuffle=False,
-                # num_workers=cpus_for_dataloader,   #modify this 
+                num_workers=0,  
                 collate_fn=collate_dgl_molecules,
             )
 
@@ -399,7 +397,6 @@ class DGLMoleculeDataModule(pl.LightningDataModule):
                 self._cache_dir.mkdir(parents=True, exist_ok=True)
                 logging.info('writing cache table')
                 #add batch size and write batch size here to avoid memory spikes with large grids
-                # pyarrow.parquet.write_table(dataset.to_table(), cached_path, write_batch_size=500) 
                 dataset.to_parquet(cached_path, batch_size=1000)
 
     def setup(self, stage: typing.Optional[str] = None):

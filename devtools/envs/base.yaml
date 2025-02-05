@@ -19,7 +19,7 @@ dependencies:
 
   - click
   - click-option-group
-
+  - polars
   - pytorch
   - pytorch-lightning
 
