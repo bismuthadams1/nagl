@@ -10,7 +10,12 @@ import tempfile
 import typing
 
 import pyarrow.parquet
-import pydantic
+
+try:
+    import pydantic.v1 as pydantic
+except ImportError:
+    import pydantic
+
 import pytorch_lightning as pl
 import rich.progress
 import torch

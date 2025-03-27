@@ -2,7 +2,11 @@ import abc
 import dataclasses
 import typing
 
-import pydantic
+try:
+    import pydantic.v1 as pydantic
+except ImportError:
+    import pydantic
+
 import torch
 from rdkit import Chem
 

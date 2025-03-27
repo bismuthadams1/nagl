@@ -2,7 +2,10 @@
 
 import typing
 
-import pydantic
+try:
+    import pydantic.v1 as pydantic
+except ImportError:
+    import pydantic
 
 MetricType = typing.Literal["rmse", "mse", "mae"]
 

@@ -1,6 +1,6 @@
-name: test
+name: nagl
+
 channels:
-  - dglteam
   - conda-forge
 
 dependencies:
@@ -22,10 +22,12 @@ dependencies:
 
   - pytorch
   - pytorch-lightning
+  - torchdata <= 0.10.0
 
-  - dgl >=0.7
+  - dgl >=1.0
 
   - pyarrow
+  - polars
   - mlflow
 
   - pip:
