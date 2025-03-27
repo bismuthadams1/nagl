@@ -72,7 +72,7 @@ def enumerate_resonance_forms(
     as_dicts: typing.Literal[False] = False,
     include_all_transfer_pathways: bool = False,
 ) -> typing.List[Chem.Mol]:
-    ...
+    pass
 
 
 @typing.overload
@@ -83,7 +83,7 @@ def enumerate_resonance_forms(
     as_dicts: typing.Literal[False] = False,
     include_all_transfer_pathways: bool = False,
 ) -> typing.List["DGLMolecule"]:
-    ...
+    pass
 
 
 @typing.overload
@@ -94,7 +94,7 @@ def enumerate_resonance_forms(
     as_dicts: typing.Literal[True] = True,
     include_all_transfer_pathways: bool = False,
 ) -> typing.List[dict]:
-    ...
+    pass
 
 
 def enumerate_resonance_forms(
@@ -588,7 +588,7 @@ def _perform_electron_transfer(
 
 
 def _select_lowest_energy_forms(
-    resonance_forms: typing.Dict[bytes, networkx.Graph]
+    resonance_forms: typing.Dict[bytes, networkx.Graph],
 ) -> typing.Dict[bytes, networkx.Graph]:
     """Select the lowest 'energy' resonance forms from an input list."""
 

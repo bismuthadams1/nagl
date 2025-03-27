@@ -1,4 +1,5 @@
 """Models for storing configuration settings."""
+
 from nagl.config._config import Config
 from nagl.config.data import DataConfig
 from nagl.config.model import ModelConfig

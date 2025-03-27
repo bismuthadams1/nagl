@@ -4,9 +4,9 @@ import pathlib
 import typing
 
 import dgl
+import polars as pl
 import pyarrow.parquet
 import torch
-import polars as pl
 from rdkit import Chem
 from torch.utils.data import Dataset
 
@@ -140,7 +140,7 @@ class DGLMoleculeDataset(Dataset):
         )
 
         table = pl.scan_parquet(paths, low_memory=True)
-        
+
         label_list = table.collect().to_dicts()
         label_list = (
             label_list if progress_iterator is None else progress_iterator(label_list)
@@ -222,12 +222,11 @@ class DGLMoleculeDataset(Dataset):
 
         table = pl.scan_parquet(paths, low_memory=True)
 
-        
         label_list = table.collect().to_dicts()
         label_list = (
             label_list if progress_iterator is None else progress_iterator(label_list)
         )
-        
+
         with get_map_func(n_processes) as map_func:
             entries = list(map_func(cls._entry_from_featurized, label_list))
 
@@ -289,7 +288,7 @@ def collate_dgl_molecules(
     entries: typing.Union[
         typing.Tuple[DGLMolecule, typing.List[DGLMoleculeDatasetEntry]],
         typing.List[typing.Tuple[dgl.DGLGraph, typing.List[DGLMoleculeDatasetEntry]]],
-    ]
+    ],
 ) -> typing.Tuple[DGLMoleculeBatch, typing.Dict[str, torch.Tensor]]:
     if isinstance(entries[0], (dgl.DGLGraph, DGLMolecule)):
         entries = [entries]

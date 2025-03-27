@@ -1,4 +1,5 @@
 """Utilities for generating default provenance information."""
+
 import functools
 import re
 import subprocess

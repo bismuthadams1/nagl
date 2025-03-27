@@ -50,15 +50,21 @@ def configure_data() -> DataConfig:
             # table that was create during stage 000.
             # The 'readout' column should correspond to one our or model readout
             # keys.
-            targets=[ReadoutTarget(column="charges-am1bcc", readout="charges", metric="rmse")],
+            targets=[
+                ReadoutTarget(column="charges-am1bcc", readout="charges", metric="rmse")
+            ],
         ),
         validation=Dataset(
             sources=["000-label-data/val.parquet"],
-            targets=[ReadoutTarget(column="charges-am1bcc", readout="charges", metric="rmse")],
+            targets=[
+                ReadoutTarget(column="charges-am1bcc", readout="charges", metric="rmse")
+            ],
         ),
         test=Dataset(
             sources=["000-label-data/test.parquet"],
-            targets=[ReadoutTarget(column="charges-am1bcc", readout="charges", metric="rmse")],
+            targets=[
+                ReadoutTarget(column="charges-am1bcc", readout="charges", metric="rmse")
+            ],
         ),
     )
 

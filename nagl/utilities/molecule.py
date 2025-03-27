@@ -1,4 +1,5 @@
 """Utilities for manipulating RDKit molecule objects."""
+
 import contextlib
 import pathlib
 import typing

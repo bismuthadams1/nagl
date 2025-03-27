@@ -3,11 +3,11 @@ import functools
 import hashlib
 import json
 import logging
+import os
 import pathlib
 import subprocess
 import tempfile
 import typing
-import os
 
 import pyarrow.parquet
 import pydantic
@@ -347,7 +347,7 @@ class DGLMoleculeDataModule(pl.LightningDataModule):
                 dataset=target_data,
                 batch_size=batch_size,
                 shuffle=False,
-                num_workers=cpus_for_dataloader,   #modify this 
+                num_workers=cpus_for_dataloader,  # modify this
                 collate_fn=collate_dgl_molecules,
             )
 
