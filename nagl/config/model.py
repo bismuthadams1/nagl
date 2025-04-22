@@ -1,6 +1,9 @@
 import typing
 
-import pydantic
+try:
+    import pydantic.v1 as pydantic
+except ImportError:
+    import pydantic
 
 from nagl.features import AtomFeatureType, BondFeatureType
 

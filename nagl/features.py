@@ -2,7 +2,11 @@ import abc
 import dataclasses
 import typing
 
-import pydantic
+try:
+    import pydantic.v1 as pydantic
+except ImportError:
+    import pydantic
+
 import torch
 from rdkit import Chem
 
@@ -249,9 +253,11 @@ class AtomAverageFormalCharge(AtomFeature):
         feature_tensor = torch.tensor(
             [
                 [
-                    sum(formal_charges[i]) / len(formal_charges[i])
-                    if len(formal_charges[i]) > 0
-                    else 0.0
+                    (
+                        sum(formal_charges[i]) / len(formal_charges[i])
+                        if len(formal_charges[i]) > 0
+                        else 0.0
+                    )
                 ]
                 for i in range(molecule.GetNumAtoms())
             ]

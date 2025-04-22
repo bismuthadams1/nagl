@@ -1,4 +1,7 @@
-import pydantic
+try:
+    import pydantic.v1 as pydantic
+except ImportError:
+    import pydantic
 
 from nagl.config.data import DataConfig
 from nagl.config.model import ModelConfig

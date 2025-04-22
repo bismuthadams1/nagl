@@ -1,8 +1,9 @@
 """Classes to calculate per-readout or global loss functions"""
+
 import abc
+import itertools
 import pathlib
 import typing
-import itertools
 
 import torch
 
@@ -248,7 +249,6 @@ class DipoleTarget(_BaseTarget):
         return report_path
 
 
-
 class ESPTarget(_BaseTarget):
     """Calculate the molecular ESP loss based on some predicted charges stored in the charge_label.
 
@@ -264,7 +264,7 @@ class ESPTarget(_BaseTarget):
         inv_distance_column: str,
         esp_length_column: str,
         charge_label: str,
-        ke : float,
+        ke: float,
     ):
         """Initialize the ESPTarget class
         metric: MetricType
@@ -288,7 +288,7 @@ class ESPTarget(_BaseTarget):
         self.inv_distance_column = inv_distance_column
         self.esp_length_column = esp_length_column
         self.ke = ke
-    
+
     def evaluate_loss(
         self,
         molecules: typing.Union[DGLMolecule, DGLMoleculeBatch],
@@ -296,74 +296,70 @@ class ESPTarget(_BaseTarget):
         prediction: typing.Dict[str, torch.Tensor],
     ) -> torch.Tensor:
         metric_func = get_metric(self.metric)
-        # split esp by the supplied length column, if batched, this column should be a list. 
+        # split esp by the supplied length column, if batched, this column should be a list.
 
-        #need to chain the list of ints and lists as batched records will have list of lengths
-        print('esp length column')
+        # need to chain the list of ints and lists as batched records will have list of lengths
+        print("esp length column")
         print(labels[self.esp_length_column])
         esp_lengths = list(
             itertools.chain.from_iterable(
-                [item] if isinstance(item, int) 
-                else item for item in labels[self.esp_length_column]
+                [item] if isinstance(item, int) else item
+                for item in labels[self.esp_length_column]
             )
         )
         # print('processed esp lengths')
         # print(esp_lengths)
 
-        #here we grab the number of atoms per molecule
+        # here we grab the number of atoms per molecule
         n_atoms_per_molecule = (
             (molecules.n_atoms,)
             if isinstance(molecules, DGLMolecule)
             else molecules.n_atoms_per_molecule
         )
-        #split the esp columns by their length
+        # split the esp columns by their length
         target_esps = torch.cat(
-        torch.split(
-            labels[self.esp_column],
-            esp_lengths)
+            torch.split(labels[self.esp_column], esp_lengths)
         ).flatten()
-        
+
         # print('target esps')
         # print(target_esps)
         # print('target esps shape')
         # print(target_esps.shape)
 
-        #work out the inv distance chunks, these will be esp length * num_atoms
+        # work out the inv distance chunks, these will be esp length * num_atoms
         inv_distance_chunks = [
-            n_atoms * esp_len for n_atoms, esp_len in zip(n_atoms_per_molecule, esp_lengths) 
+            n_atoms * esp_len
+            for n_atoms, esp_len in zip(n_atoms_per_molecule, esp_lengths)
         ]
 
-        #split the inv distances by these chunks
+        # split the inv distances by these chunks
         inv_distances = torch.split(
-            labels[self.inv_distance_column],inv_distance_chunks
+            labels[self.inv_distance_column], inv_distance_chunks
         )
-        
+
         # split the total array by the number of atoms per molecule
         charges = torch.split(
             prediction[self.charge_label].squeeze(), n_atoms_per_molecule
         )
 
         predicted_esps = torch.cat(
-        [
-            self.ke * (inv_distance_item.reshape(-1,len(charge_slice)) @ charge_slice)
-            for charge_slice, inv_distance_item in zip(charges, inv_distances)
-        ]
+            [
+                self.ke
+                * (inv_distance_item.reshape(-1, len(charge_slice)) @ charge_slice)
+                for charge_slice, inv_distance_item in zip(charges, inv_distances)
+            ]
         )
-        
+
         # print('predicted esps')
         # print(predicted_esps)
         # print('predicted_esps shape')
         # print(predicted_esps.shape)
         # get the error across all dipoles
-        return (
-            metric_func(predicted_esps, target_esps)
-            * self.weight
-            / self.denominator
-        )
-        
+        return metric_func(predicted_esps, target_esps) * self.weight / self.denominator
+
     def target_column(self) -> str:
         return self.esp_column
-    
+
     def report_artifact(
         self,
         molecules: typing.Union[DGLMolecule, DGLMoleculeBatch],
@@ -372,44 +368,44 @@ class ESPTarget(_BaseTarget):
         output_folder: pathlib.Path,
     ):
         from nagl.reporting import create_molecule_label_report
-        
+
         # break up the molecules, predictions and labels and pass to the error function one at a time
         if isinstance(molecules, DGLMoleculeBatch):
             molecules = molecules.unbatch()
         else:
             molecules = [molecules]
-          
+
         n_atoms_per_mol = [molecule.n_atoms for molecule in molecules]
-        #need to chain the list of ints and lists as batched records will have list of lengths
+        # need to chain the list of ints and lists as batched records will have list of lengths
         esp_lengths = list(
-            itertools.chain.from_iterable([item] if isinstance(item, int) else item for item in labels[self.esp_length_column])
+            itertools.chain.from_iterable(
+                [item] if isinstance(item, int) else item
+                for item in labels[self.esp_length_column]
+            )
         )
         # print('esps lengths in loss bit')
         # print(esp_lengths)
-        
-        target_esps = torch.split(
-            labels[self.esp_column],
-            esp_lengths
-        )
-           #  .flatten()     # torch.cat(
-           
+
+        target_esps = torch.split(labels[self.esp_column], esp_lengths)
+        #  .flatten()     # torch.cat(
+
         # esp_length_column = labels[self.esp_length_column]
-        
+
         # print('esp length column')
         # print(esp_length_column)
-        
-        #work out the inv distance chunks, these will be esp length * num_atoms
+
+        # work out the inv distance chunks, these will be esp length * num_atoms
         inv_distance_chunks = [
-            n_atoms * esp_len for n_atoms, esp_len in zip(n_atoms_per_mol, esp_lengths) 
+            n_atoms * esp_len for n_atoms, esp_len in zip(n_atoms_per_mol, esp_lengths)
         ]
 
-        #split the inv distances by these chunks
+        # split the inv distances by these chunks
         inv_distances = torch.split(
-            labels[self.inv_distance_column],inv_distance_chunks
-        )        
-        
+            labels[self.inv_distance_column], inv_distance_chunks
+        )
+
         charges = torch.split(prediction[self.charge_label].squeeze(), n_atoms_per_mol)
-        
+
         entries_and_metrics = []
         for i, molecule in enumerate(molecules):
             error = self.evaluate_loss(
@@ -417,14 +413,14 @@ class ESPTarget(_BaseTarget):
                 labels={
                     self.inv_distance_column: inv_distances[i],
                     self.esp_column: target_esps[i],
-                    self.esp_length_column : esp_lengths[i].view(-1).tolist(),
+                    self.esp_length_column: esp_lengths[i].view(-1).tolist(),
                 },
-                prediction={self.charge_label: charges[i]}
+                prediction={self.charge_label: charges[i]},
             )
             entries_and_metrics.append(
                 (molecule, error * self.denominator / self.weight)
             )
-        
+
         report_path = output_folder.joinpath(f"{self.esp_column}.html")
         create_molecule_label_report(
             entries_and_metrics=entries_and_metrics,
@@ -435,7 +431,9 @@ class ESPTarget(_BaseTarget):
         return report_path
 
 
-LossCalculator = typing.Union[typing.Literal["ReadoutTarget", "DipoleTarget","ESPTarget"], str]
+LossCalculator = typing.Union[
+    typing.Literal["ReadoutTarget", "DipoleTarget", "ESPTarget"], str
+]
 
 
 def get_loss_function(type_: LossCalculator) -> typing.Type[_BaseTarget]:

@@ -1,7 +1,12 @@
 import typing
 
 import numpy
-import pydantic
+
+try:
+    import pydantic.v1 as pydantic
+except ImportError:
+    import pydantic
+
 import pytest
 import torch
 from rdkit import Chem
